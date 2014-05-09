@@ -1,0 +1,10 @@
+<scr:component xmlns:scr="http://www.osgi.org/xmlns/scr/v1.1.0"
+	name="be.nabu.libs.resources.file.FileResourceResolver">
+
+	<implementation class="be.nabu.libs.resources.file.FileResourceResolver" />
+
+	<service>
+		<provide interface="be.nabu.libs.resources.api.ResourceResolver" />
+	</service>
+
+</scr:component>
