@@ -61,11 +61,14 @@ public class FileDirectory extends FileItem implements ManageableContainer<FileR
 	
 	public List<FileResource> getChildren() {
 		List<FileResource> children = new ArrayList<FileResource>();
-		for (File child : getFile().listFiles()) {
-			if (child.isFile())
-				children.add(new FileItem(this, child));
-			else if (child.isDirectory())
-				children.add(new FileDirectory(this, child));
+		File [] list = getFile().listFiles();
+		if (list != null) {
+			for (File child : list) {
+				if (child.isFile())
+					children.add(new FileItem(this, child));
+				else if (child.isDirectory())
+					children.add(new FileDirectory(this, child));
+			}
 		}
 		return children;
 	}
