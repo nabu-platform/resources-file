@@ -38,7 +38,7 @@ public class FileDirectory extends FileItem implements ManageableContainer<FileR
 	@Override
 	public FileResource create(String name, String contentType) throws IOException {
 		File target = new File(getFile(), name);
-		if (contentType.equals(Resource.CONTENT_TYPE_DIRECTORY)) {
+		if (Resource.CONTENT_TYPE_DIRECTORY.equals(contentType)) {
 			if (!target.mkdir())
 				throw new IOException("Could not create directory: " + target);
 			return new FileDirectory(this, target);
