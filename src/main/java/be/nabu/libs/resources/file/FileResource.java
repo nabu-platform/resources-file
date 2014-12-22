@@ -16,6 +16,9 @@ abstract public class FileResource implements Resource, ResourceRoot {
 	public FileResource(ResourceContainer<?> parent, File file) {
 		this.parent = parent;
 		this.file = file;
+		if (parent == null && file.getParentFile() != null) {
+			this.parent = new FileDirectory(null, file.getParentFile());
+		}
 	}
 
 	@Override
