@@ -52,11 +52,30 @@ public class FileDirectory extends FileItem implements ManageableContainer<FileR
 	@Override
 	public void delete(String name) throws IOException {
 		File target = new File(getFile(), name);
+		if (target.isDirectory()) {
+			deleteChildren(target);
+		}
 		// boolean is not always accurate
 		target.delete();
 		// perform extra check
-		if (target.exists())
+		if (target.exists()) {
 			throw new IOException("Could not delete file: " + target);
+		}
+	}
+	
+	private void deleteChildren(File directory) {
+		File[] children = directory.listFiles();
+		if (children != null) {
+			for (File child : children) {
+				if (child.isDirectory()) {
+					deleteChildren(child);
+					child.delete();
+				}
+				else {
+					child.delete();
+				}
+			}
+		}
 	}
 	
 	public List<FileResource> getChildren() {
