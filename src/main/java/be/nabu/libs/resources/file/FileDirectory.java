@@ -10,7 +10,7 @@ import be.nabu.libs.resources.api.ManageableContainer;
 import be.nabu.libs.resources.api.Resource;
 import be.nabu.libs.resources.api.ResourceContainer;
 
-public class FileDirectory extends FileItem implements ManageableContainer<FileResource> {
+public class FileDirectory extends FileResource implements ManageableContainer<FileResource> {
 
 	public FileDirectory(ResourceContainer<?> parent, File file) {
 		super(parent, file);
