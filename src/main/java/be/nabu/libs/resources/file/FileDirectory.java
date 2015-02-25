@@ -96,5 +96,9 @@ public class FileDirectory extends FileResource implements ManageableContainer<F
 	public Iterator<FileResource> iterator() {
 		return getChildren().iterator();
 	}
-
+	
+	@Override
+	public String toString() {
+		return getFile().getAbsolutePath();
+	}
 }
