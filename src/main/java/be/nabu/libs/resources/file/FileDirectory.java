@@ -2,9 +2,9 @@ package be.nabu.libs.resources.file;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
+import java.util.Map;
 
 import be.nabu.libs.resources.api.ManageableContainer;
 import be.nabu.libs.resources.api.Resource;
@@ -12,6 +12,8 @@ import be.nabu.libs.resources.api.ResourceContainer;
 
 public class FileDirectory extends FileResource implements ManageableContainer<FileResource> {
 
+	private Map<String, FileResource> children;
+	
 	public FileDirectory(ResourceContainer<?> parent, File file) {
 		super(parent, file);
 	}
@@ -23,20 +25,28 @@ public class FileDirectory extends FileResource implements ManageableContainer<F
 
 	@Override
 	public FileResource getChild(String name) {
-		File child = new File(getFile(), name);
-		if (child.exists()) {
-			if (child.isFile())
-				return new FileItem(this, child);
-			else if (child.isDirectory())
-				return new FileDirectory(this, child);
-			else
-				return null;
+		if (!getChildren().containsKey(name)) {
+			synchronized(this) {
+				if (!getChildren().containsKey(name)) {
+					File child = new File(getFile(), name);
+					if (child.exists()) {
+						if (child.isFile())
+							getChildren().put(name, new FileItem(this, child));
+						else if (child.isDirectory())
+							getChildren().put(name, new FileDirectory(this, child));
+						else
+							getChildren().put(name, null);
+					}
+				}
+			}
 		}
-		return null;
+		return getChildren().get(name);
 	}
 
 	@Override
 	public FileResource create(String name, String contentType) throws IOException {
+		// refresh child
+		getChildren().remove(name);
 		File target = new File(getFile(), name);
 		if (Resource.CONTENT_TYPE_DIRECTORY.equals(contentType)) {
 			if (!target.mkdir())
@@ -51,6 +61,8 @@ public class FileDirectory extends FileResource implements ManageableContainer<F
 
 	@Override
 	public void delete(String name) throws IOException {
+		// refresh child
+		getChildren().remove(name);
 		File target = new File(getFile(), name);
 		if (target.isDirectory()) {
 			deleteChildren(target);
@@ -67,6 +79,9 @@ public class FileDirectory extends FileResource implements ManageableContainer<F
 		File[] children = directory.listFiles();
 		if (children != null) {
 			for (File child : children) {
+				// refresh child
+				getChildren().remove(child.getName());
+				
 				if (child.isDirectory()) {
 					deleteChildren(child);
 					child.delete();
@@ -78,15 +93,24 @@ public class FileDirectory extends FileResource implements ManageableContainer<F
 		}
 	}
 	
-	public List<FileResource> getChildren() {
-		List<FileResource> children = new ArrayList<FileResource>();
-		File [] list = getFile().listFiles();
-		if (list != null) {
-			for (File child : list) {
-				if (child.isFile())
-					children.add(new FileItem(this, child));
-				else if (child.isDirectory())
-					children.add(new FileDirectory(this, child));
+	private Map<String, FileResource> getChildren() {
+		if (children == null) {
+			synchronized(this) {
+				if (children == null) {
+					Map<String, FileResource> children = new HashMap<String, FileResource>();
+					File [] list = getFile().listFiles();
+					if (list != null) {
+						for (File child : list) {
+							if (child.isFile()) {
+								children.put(child.getName(), new FileItem(this, child));
+							}
+							else if (child.isDirectory()) {
+								children.put(child.getName(), new FileDirectory(this, child));
+							}
+						}
+					}
+					this.children = children;
+				}
 			}
 		}
 		return children;
@@ -94,7 +118,7 @@ public class FileDirectory extends FileResource implements ManageableContainer<F
 	
 	@Override
 	public Iterator<FileResource> iterator() {
-		return getChildren().iterator();
+		return getChildren().values().iterator();
 	}
 	
 	@Override
