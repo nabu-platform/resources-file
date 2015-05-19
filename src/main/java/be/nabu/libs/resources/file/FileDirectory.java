@@ -45,18 +45,20 @@ public class FileDirectory extends FileResource implements ManageableContainer<F
 
 	@Override
 	public FileResource create(String name, String contentType) throws IOException {
-		// refresh child
-		getChildren().remove(name);
 		File target = new File(getFile(), name);
+		FileResource resource;
 		if (Resource.CONTENT_TYPE_DIRECTORY.equals(contentType)) {
 			if (!target.mkdir())
 				throw new IOException("Could not create directory: " + target);
-			return new FileDirectory(this, target);
+			resource = new FileDirectory(this, target);
 		}
 		else {
 			target.createNewFile();
-			return new FileItem(this, target);
+			resource = new FileItem(this, target);
 		}
+		// add to children
+		getChildren().put(name, resource);
+		return resource;
 	}
 
 	@Override
