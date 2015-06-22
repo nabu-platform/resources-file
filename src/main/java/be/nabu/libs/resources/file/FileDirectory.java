@@ -9,10 +9,12 @@ import java.util.Map;
 import be.nabu.libs.resources.api.ManageableContainer;
 import be.nabu.libs.resources.api.Resource;
 import be.nabu.libs.resources.api.ResourceContainer;
+import be.nabu.libs.resources.api.features.CacheableResource;
 
-public class FileDirectory extends FileResource implements ManageableContainer<FileResource> {
+public class FileDirectory extends FileResource implements ManageableContainer<FileResource>, CacheableResource {
 
 	private Map<String, FileResource> children;
+	private boolean isCaching = true;
 	
 	public FileDirectory(ResourceContainer<?> parent, File file) {
 		super(parent, file);
@@ -96,9 +98,9 @@ public class FileDirectory extends FileResource implements ManageableContainer<F
 	}
 	
 	private Map<String, FileResource> getChildren() {
-		if (children == null) {
+		if (children == null || !isCaching) {
 			synchronized(this) {
-				if (children == null) {
+				if (children == null || !isCaching) {
 					Map<String, FileResource> children = new HashMap<String, FileResource>();
 					File [] list = getFile().listFiles();
 					if (list != null) {
@@ -126,5 +128,20 @@ public class FileDirectory extends FileResource implements ManageableContainer<F
 	@Override
 	public String toString() {
 		return getFile().getAbsolutePath();
+	}
+
+	@Override
+	public void resetCache() throws IOException {
+		children = null;
+	}
+
+	@Override
+	public void setCaching(boolean cache) {
+		this.isCaching = cache;
+	}
+
+	@Override
+	public boolean isCaching() {
+		return isCaching;
 	}
 }
