@@ -101,23 +101,27 @@ public class FileDirectory extends FileResource implements ManageableContainer<F
 		if (children == null || !isCaching) {
 			synchronized(this) {
 				if (children == null || !isCaching) {
-					Map<String, FileResource> children = new HashMap<String, FileResource>();
-					File [] list = getFile().listFiles();
-					if (list != null) {
-						for (File child : list) {
-							if (child.isFile()) {
-								children.put(child.getName(), new FileItem(this, child));
-							}
-							else if (child.isDirectory()) {
-								children.put(child.getName(), new FileDirectory(this, child));
-							}
-						}
-					}
-					this.children = children;
+					loadChildren();
 				}
 			}
 		}
 		return children;
+	}
+
+	private void loadChildren() {
+		Map<String, FileResource> children = new HashMap<String, FileResource>();
+		File [] list = getFile().listFiles();
+		if (list != null) {
+			for (File child : list) {
+				if (child.isFile()) {
+					children.put(child.getName(), new FileItem(this, child));
+				}
+				else if (child.isDirectory()) {
+					children.put(child.getName(), new FileDirectory(this, child));
+				}
+			}
+		}
+		this.children = children;
 	}
 	
 	@Override
@@ -132,7 +136,9 @@ public class FileDirectory extends FileResource implements ManageableContainer<F
 
 	@Override
 	public void resetCache() throws IOException {
-		children = null;
+		synchronized(this) {
+			loadChildren();
+		}
 	}
 
 	@Override
