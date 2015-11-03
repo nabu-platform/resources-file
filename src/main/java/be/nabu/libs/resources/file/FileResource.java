@@ -1,14 +1,15 @@
 package be.nabu.libs.resources.file;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 
+import be.nabu.libs.resources.api.LocatableResource;
 import be.nabu.libs.resources.api.Resource;
 import be.nabu.libs.resources.api.ResourceContainer;
-import be.nabu.libs.resources.api.ResourceRoot;
 
-abstract public class FileResource implements Resource, ResourceRoot {
+abstract public class FileResource implements Resource, Closeable, LocatableResource {
 
 	private File file;
 	private ResourceContainer<?> parent;
