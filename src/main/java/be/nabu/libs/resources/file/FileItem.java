@@ -1,5 +1,7 @@
 package be.nabu.libs.resources.file;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -35,9 +37,10 @@ public class FileItem extends FileResource implements ReadableResource, Writable
 
 	@Override
 	public WritableContainer<ByteBuffer> getWritable() throws FileNotFoundException {
-		if (!getFile().exists() && !getFile().getParentFile().exists())
+		if (!getFile().exists() && !getFile().getParentFile().exists()) {
 			getFile().getParentFile().mkdirs();
-		return IOUtils.wrap(new FileOutputStream(getFile()));
+		}
+		return IOUtils.wrap(new BufferedOutputStream(new FileOutputStream(getFile())));
 	}
 
 	@Override
@@ -48,7 +51,7 @@ public class FileItem extends FileResource implements ReadableResource, Writable
 		catch (IOException e) {
 			throw new RuntimeException(e);
 		}
-		return IOUtils.wrap(new FileInputStream(getFile()));
+		return IOUtils.wrap(new BufferedInputStream(new FileInputStream(getFile())));
 	}
 
 	@Override
