@@ -27,22 +27,23 @@ public class FileDirectory extends FileResource implements ManageableContainer<F
 
 	@Override
 	public FileResource getChild(String name) {
-		if (!getChildren().containsKey(name)) {
+		Map<String, FileResource> children = getChildren();
+		if (!children.containsKey(name)) {
 			synchronized(this) {
-				if (!getChildren().containsKey(name)) {
+				if (!children.containsKey(name)) {
 					File child = new File(getFile(), name);
 					if (child.exists()) {
 						if (child.isFile())
-							getChildren().put(name, new FileItem(this, child));
+							children.put(name, new FileItem(this, child));
 						else if (child.isDirectory())
-							getChildren().put(name, new FileDirectory(this, child));
+							children.put(name, new FileDirectory(this, child));
 						else
-							getChildren().put(name, null);
+							children.put(name, null);
 					}
 				}
 			}
 		}
-		return getChildren().get(name);
+		return children.get(name);
 	}
 
 	@Override
