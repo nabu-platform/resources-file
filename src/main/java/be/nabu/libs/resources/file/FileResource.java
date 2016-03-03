@@ -19,11 +19,11 @@ abstract public class FileResource implements Resource, Closeable, LocatableReso
 	 */
 	private URI uri;
 	
-	public FileResource(ResourceContainer<?> parent, File file) {
+	public FileResource(ResourceContainer<?> parent, File file, boolean allowUpwardResolving) {
 		this.parent = parent;
 		this.file = file;
-		if (parent == null && file.getParentFile() != null) {
-			this.parent = new FileDirectory(null, file.getParentFile());
+		if (allowUpwardResolving && parent == null && file.getParentFile() != null) {
+			this.parent = new FileDirectory(null, file.getParentFile(), allowUpwardResolving);
 		}
 	}
 

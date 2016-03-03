@@ -17,9 +17,9 @@ public class FileResourceResolver implements ResourceResolver {
 	public Resource getResource(URI uri, Principal principal) {
 		File file = new File(uri.getSchemeSpecificPart());
 		if (file.isFile())
-			return new FileItem(null, file);
+			return new FileItem(null, file, true);
 		else if (file.isDirectory())
-			return new FileDirectory(null, file);
+			return new FileDirectory(null, file, true);
 		else
 			return null;
 	}

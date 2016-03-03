@@ -15,8 +15,10 @@ import java.util.Date;
 
 import be.nabu.libs.resources.api.AccessTrackingResource;
 import be.nabu.libs.resources.api.AppendableResource;
+import be.nabu.libs.resources.api.DetachableResource;
 import be.nabu.libs.resources.api.FiniteResource;
 import be.nabu.libs.resources.api.ReadableResource;
+import be.nabu.libs.resources.api.Resource;
 import be.nabu.libs.resources.api.ResourceContainer;
 import be.nabu.libs.resources.api.TimestampedResource;
 import be.nabu.utils.io.IOUtils;
@@ -24,10 +26,10 @@ import be.nabu.utils.io.api.ByteBuffer;
 import be.nabu.utils.io.api.ReadableContainer;
 import be.nabu.utils.io.api.WritableContainer;
 
-public class FileItem extends FileResource implements ReadableResource, AppendableResource, FiniteResource, TimestampedResource, AccessTrackingResource {
+public class FileItem extends FileResource implements ReadableResource, AppendableResource, FiniteResource, TimestampedResource, AccessTrackingResource, DetachableResource {
 
-	public FileItem(ResourceContainer<?> parent, File file) {
-		super(parent, file);
+	public FileItem(ResourceContainer<?> parent, File file, boolean allowUpwardResolving) {
+		super(parent, file, allowUpwardResolving);
 	}
 
 	@Override
@@ -80,6 +82,11 @@ public class FileItem extends FileResource implements ReadableResource, Appendab
 			getFile().getParentFile().mkdirs();
 		}
 		return IOUtils.wrap(new BufferedOutputStream(new FileOutputStream(getFile(), true)));
+	}
+
+	@Override
+	public Resource detach() {
+		return new FileItem(null, getFile(), false);
 	}
 
 }

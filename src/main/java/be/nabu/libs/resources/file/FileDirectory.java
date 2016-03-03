@@ -6,18 +6,19 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
+import be.nabu.libs.resources.api.DetachableResource;
 import be.nabu.libs.resources.api.ManageableContainer;
 import be.nabu.libs.resources.api.Resource;
 import be.nabu.libs.resources.api.ResourceContainer;
 import be.nabu.libs.resources.api.features.CacheableResource;
 
-public class FileDirectory extends FileResource implements ManageableContainer<FileResource>, CacheableResource {
+public class FileDirectory extends FileResource implements ManageableContainer<FileResource>, CacheableResource, DetachableResource {
 
 	private Map<String, FileResource> children;
 	private boolean isCaching = true;
 	
-	public FileDirectory(ResourceContainer<?> parent, File file) {
-		super(parent, file);
+	public FileDirectory(ResourceContainer<?> parent, File file, boolean allowUpwardResolving) {
+		super(parent, file, allowUpwardResolving);
 	}
 	
 	@Override
@@ -34,9 +35,9 @@ public class FileDirectory extends FileResource implements ManageableContainer<F
 					File child = new File(getFile(), name);
 					if (child.exists()) {
 						if (child.isFile())
-							children.put(name, new FileItem(this, child));
+							children.put(name, new FileItem(this, child, true));
 						else if (child.isDirectory())
-							children.put(name, new FileDirectory(this, child));
+							children.put(name, new FileDirectory(this, child, true));
 						else
 							children.put(name, null);
 					}
@@ -53,11 +54,11 @@ public class FileDirectory extends FileResource implements ManageableContainer<F
 		if (Resource.CONTENT_TYPE_DIRECTORY.equals(contentType)) {
 			if (!target.mkdir())
 				throw new IOException("Could not create directory: " + target);
-			resource = new FileDirectory(this, target);
+			resource = new FileDirectory(this, target, true);
 		}
 		else {
 			target.createNewFile();
-			resource = new FileItem(this, target);
+			resource = new FileItem(this, target, true);
 		}
 		// add to children
 		getChildren().put(name, resource);
@@ -115,10 +116,10 @@ public class FileDirectory extends FileResource implements ManageableContainer<F
 		if (list != null) {
 			for (File child : list) {
 				if (child.isFile()) {
-					children.put(child.getName(), new FileItem(this, child));
+					children.put(child.getName(), new FileItem(this, child, true));
 				}
 				else if (child.isDirectory()) {
-					children.put(child.getName(), new FileDirectory(this, child));
+					children.put(child.getName(), new FileDirectory(this, child, true));
 				}
 			}
 		}
@@ -150,5 +151,10 @@ public class FileDirectory extends FileResource implements ManageableContainer<F
 	@Override
 	public boolean isCaching() {
 		return isCaching;
+	}
+
+	@Override
+	public Resource detach() {
+		return new FileDirectory(null, getFile(), false);
 	}
 }
