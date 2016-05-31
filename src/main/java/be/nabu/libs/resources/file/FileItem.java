@@ -50,7 +50,7 @@ public class FileItem extends FileResource implements ReadableResource, Appendab
 			Files.setAttribute(getFile().toPath(), "lastAccessTime", FileTime.fromMillis(new Date().getTime()));
 		}
 		catch (IOException e) {
-			throw new RuntimeException(e);
+			// ignore, if we do not have permission to update file but we do to read it, this should still be possible
 		}
 		return IOUtils.wrap(new BufferedInputStream(new FileInputStream(getFile())));
 	}
