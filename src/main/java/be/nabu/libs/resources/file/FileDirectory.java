@@ -52,8 +52,9 @@ public class FileDirectory extends FileResource implements ManageableContainer<F
 		File target = new File(getFile(), name);
 		FileResource resource;
 		if (Resource.CONTENT_TYPE_DIRECTORY.equals(contentType)) {
-			if (!target.mkdir())
+			if (!target.mkdir() && (!target.exists() || !target.isDirectory())) {
 				throw new IOException("Could not create directory: " + target);
+			}
 			resource = new FileDirectory(this, target, true);
 		}
 		else {
