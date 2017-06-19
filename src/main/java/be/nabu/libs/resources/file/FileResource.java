@@ -57,7 +57,7 @@ abstract public class FileResource implements Resource, Closeable, LocatableReso
 	}
 
 	@Override
-	public URI getURI() {
+	public URI getUri() {
 		if (uri == null) {
 			uri = this.file.toURI();
 		}
@@ -66,7 +66,7 @@ abstract public class FileResource implements Resource, Closeable, LocatableReso
 	
 	@Override
 	public String toString() {
-		return getURI().toString();
+		return getUri().toString();
 	}
 	
 }
