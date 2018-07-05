@@ -6,10 +6,11 @@ import java.io.IOException;
 import java.net.URI;
 
 import be.nabu.libs.resources.api.LocatableResource;
+import be.nabu.libs.resources.api.RenameableResource;
 import be.nabu.libs.resources.api.Resource;
 import be.nabu.libs.resources.api.ResourceContainer;
 
-abstract public class FileResource implements Resource, Closeable, LocatableResource {
+abstract public class FileResource implements Resource, Closeable, LocatableResource, RenameableResource {
 
 	private File file;
 	private ResourceContainer<?> parent;
@@ -67,6 +68,23 @@ abstract public class FileResource implements Resource, Closeable, LocatableReso
 	@Override
 	public String toString() {
 		return getUri().toString();
+	}
+
+	@Override
+	public void rename(String name) throws IOException {
+		File newFile = new File(getFile().getParentFile(), name);
+		if (newFile.exists()) {
+			throw new IOException("Target file already exists: " + newFile);
+		}
+		// make sure we have a file directory parent before actually renaming
+		FileDirectory parent = (FileDirectory) getParent();
+		if (!getFile().renameTo(newFile)) {
+			throw new IOException("Could not rename " + getFile() + " to " + newFile);
+		}
+		if (parent != null) {
+			parent.rename(file.getName(), newFile.getName());
+		}
+		this.file = newFile;
 	}
 	
 }

@@ -100,6 +100,12 @@ public class FileDirectory extends FileResource implements ManageableContainer<F
 		}
 	}
 	
+	protected void rename(String oldName, String newName) {
+		Map<String, FileResource> children = getChildren();
+		children.put(newName, children.get(oldName));
+		children.remove(oldName);
+	}
+	
 	private Map<String, FileResource> getChildren() {
 		if (children == null || !isCaching) {
 			synchronized(this) {
