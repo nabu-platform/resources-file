@@ -48,7 +48,7 @@ abstract public class FileResource implements Resource, Closeable, LocatableReso
 		return file.hashCode();
 	}
 	
-	protected File getFile() {
+	public File getFile() {
 		return file;
 	}
 
