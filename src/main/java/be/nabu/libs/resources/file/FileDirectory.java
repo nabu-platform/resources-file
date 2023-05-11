@@ -68,8 +68,12 @@ public class FileDirectory extends FileResource implements ManageableContainer<F
 
 	@Override
 	public void delete(String name) throws IOException {
-		// refresh child
-		getChildren().remove(name);
+		// @2023-04-12: remove from children IF we have loaded them, we don't want the delete to specifically trigger a load of all children
+		// in large directories if we want to delete a particular file, we incidentally trigger a full listing, we can't easily change the caching mechanisms without extensive testing, but this change should have the same behavior as before but not trigger a child load if it hasn't already been done
+//		getChildren().remove(name);
+		if (children != null && children.containsKey(name)) {
+			children.remove(name);
+		}
 		File target = new File(getFile(), name);
 		if (target.isDirectory()) {
 			deleteChildren(target);
@@ -86,8 +90,11 @@ public class FileDirectory extends FileResource implements ManageableContainer<F
 		File[] children = directory.listFiles();
 		if (children != null) {
 			for (File child : children) {
-				// refresh child
-				getChildren().remove(child.getName());
+				// @2023-04-12: see above
+//				getChildren().remove(child.getName());
+				if (this.children != null && this.children.containsKey(child.getName())) {
+					this.children.remove(child.getName());
+				}
 				
 				if (child.isDirectory()) {
 					deleteChildren(child);
@@ -101,9 +108,14 @@ public class FileDirectory extends FileResource implements ManageableContainer<F
 	}
 	
 	protected void rename(String oldName, String newName) {
-		Map<String, FileResource> children = getChildren();
-		children.put(newName, children.get(oldName));
-		children.remove(oldName);
+		// @2023-04-12: see above
+		if (children != null && children.containsKey(oldName)) {
+			children.put(newName, children.get(oldName));
+			children.remove(oldName);
+		}
+//		Map<String, FileResource> children = getChildren();
+//		children.put(newName, children.get(oldName));
+//		children.remove(oldName);
 	}
 	
 	private Map<String, FileResource> getChildren() {
