@@ -61,8 +61,14 @@ public class FileDirectory extends FileResource implements ManageableContainer<F
 			target.createNewFile();
 			resource = new FileItem(this, target, true);
 		}
+		// @2023-09-20: we have the same issue as we did for delete etc: when we create a new file, we accidentally trigger a full listing of the children. for large directories this can incur a large overhead
+		// while it is only really relevant when you actually list the children
+		// so if you have loaded the children already, we just add it directly, otherwise we ignore it, assuming it will be picked up when actually listing (if you want to)
+		if (children != null) {
+			children.put(name, resource);
+		}
 		// add to children
-		getChildren().put(name, resource);
+//		getChildren().put(name, resource);
 		return resource;
 	}
 
