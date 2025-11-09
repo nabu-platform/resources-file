@@ -23,11 +23,12 @@ import java.io.IOException;
 import java.net.URI;
 
 import be.nabu.libs.resources.api.LocatableResource;
+import be.nabu.libs.resources.api.ReattachableResource;
 import be.nabu.libs.resources.api.RenameableResource;
 import be.nabu.libs.resources.api.Resource;
 import be.nabu.libs.resources.api.ResourceContainer;
 
-abstract public class FileResource implements Resource, Closeable, LocatableResource, RenameableResource {
+abstract public class FileResource implements Resource, Closeable, LocatableResource, RenameableResource, ReattachableResource {
 
 	private File file;
 	private ResourceContainer<?> parent;
@@ -103,6 +104,11 @@ abstract public class FileResource implements Resource, Closeable, LocatableReso
 		}
 		this.file = newFile;
 	}
-	
+
+	@Override
+	public void reattach(ResourceContainer<?> parent) {
+		this.parent = parent;
+	}
+
 }
 

@@ -17,10 +17,10 @@
 
 package be.nabu.libs.resources.file;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.BufferedInputStream;
 import java.io.InputStream;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -28,19 +28,17 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import be.nabu.libs.resources.ResourceUtils;
 import be.nabu.libs.resources.api.DetachableResource;
 import be.nabu.libs.resources.api.ManageableContainer;
 import be.nabu.libs.resources.api.Resource;
 import be.nabu.libs.resources.api.ResourceContainer;
 import be.nabu.libs.resources.api.features.CacheableResource;
-import be.nabu.utils.io.IOUtils;
 
 public class FileDirectory extends FileResource implements ManageableContainer<FileResource>, CacheableResource, DetachableResource {
 
 	private Map<String, FileResource> children;
 	private boolean isCaching = Boolean.parseBoolean(System.getProperty("file.cache", "true"));
-	// children we do not speak of!
-	private List<String> blacklist;
 	
 	public FileDirectory(ResourceContainer<?> parent, File file, boolean allowUpwardResolving) {
 		super(parent, file, allowUpwardResolving);
@@ -160,37 +158,44 @@ public class FileDirectory extends FileResource implements ManageableContainer<F
 		return children;
 	}
 
-	private void loadChildren() {
-		Map<String, FileResource> children = new HashMap<String, FileResource>();
-		File file = new File(getFile(), ".ignore");
-		blacklist = new ArrayList<String>();
-		if (file.exists()) {
-			InputStream input = null;
-			try {
-				input = new BufferedInputStream(new FileInputStream(file));
-				byte[] bytes = IOUtils.toBytes(IOUtils.wrap(input));
-				for (String line : new String(bytes).split("\n")) {
-					blacklist.add(line.trim());
-				}
-			}
-			catch (Exception e) {
-				throw new RuntimeException(e);
-			}
-			finally {
-				if (input != null) {
-					try {
-						input.close();
+	private List<String> ignoreRules;
+
+	public List<String> getIgnoreRules() {
+		if (ignoreRules == null) {
+			synchronized(this) {
+				if (ignoreRules == null) {
+					List<String> ignoreRules = new ArrayList<>();
+					File file = new File(getFile(), ".ignore");
+					if (file.exists()) {
+						try (InputStream input = new BufferedInputStream(new FileInputStream(file))) {
+							ignoreRules.addAll(ResourceUtils.parseIgnoreRules(input));
+						}
+						catch (Exception e) {
+							throw new RuntimeException(e);
+						}
 					}
-					catch (Exception e) {
-						// ignore....
+					file = new File(getFile(), ".gitignore");
+					if (file.exists()) {
+						try (InputStream input = new BufferedInputStream(new FileInputStream(file))) {
+							ignoreRules.addAll(ResourceUtils.parseIgnoreRules(input));
+						}
+						catch (Exception e) {
+							throw new RuntimeException(e);
+						}
 					}
+					this.ignoreRules = ignoreRules;
 				}
 			}
 		}
+		return ignoreRules;
+	}
+	
+	private void loadChildren() {
+		Map<String, FileResource> children = new HashMap<String, FileResource>();
 		File [] list = getFile().listFiles();
 		if (list != null) {
 			for (File child : list) {
-				if (blacklist.contains(child.getName())) {
+				if (ResourceUtils.shouldIgnore(this, child.getName())) {
 					continue;
 				}
 				if (child.isFile()) {
