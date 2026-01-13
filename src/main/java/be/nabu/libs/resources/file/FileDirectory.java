@@ -39,6 +39,7 @@ public class FileDirectory extends FileResource implements ManageableContainer<F
 
 	private Map<String, FileResource> children;
 	private boolean isCaching = Boolean.parseBoolean(System.getProperty("file.cache", "true"));
+	private static boolean USE_GIT_IGNORE = Boolean.parseBoolean(System.getProperty("file.gitignore", "true"));
 	
 	public FileDirectory(ResourceContainer<?> parent, File file, boolean allowUpwardResolving) {
 		super(parent, file, allowUpwardResolving);
@@ -165,16 +166,19 @@ public class FileDirectory extends FileResource implements ManageableContainer<F
 			synchronized(this) {
 				if (ignoreRules == null) {
 					List<String> ignoreRules = new ArrayList<>();
-					File file = new File(getFile(), ".ignore");
-					if (file.exists()) {
-						try (InputStream input = new BufferedInputStream(new FileInputStream(file))) {
-							ignoreRules.addAll(ResourceUtils.parseIgnoreRules(input));
-						}
-						catch (Exception e) {
-							throw new RuntimeException(e);
+					// put this first to allow you to override some gitignore rules in the ignore if needed
+					if (USE_GIT_IGNORE) {
+						File file = new File(getFile(), ".gitignore");
+						if (file.exists()) {
+							try (InputStream input = new BufferedInputStream(new FileInputStream(file))) {
+								ignoreRules.addAll(ResourceUtils.parseIgnoreRules(input));
+							}
+							catch (Exception e) {
+								throw new RuntimeException(e);
+							}
 						}
 					}
-					file = new File(getFile(), ".gitignore");
+					File file = new File(getFile(), ".ignore");
 					if (file.exists()) {
 						try (InputStream input = new BufferedInputStream(new FileInputStream(file))) {
 							ignoreRules.addAll(ResourceUtils.parseIgnoreRules(input));
