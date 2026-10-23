@@ -75,15 +75,20 @@ public class FileDirectory extends FileResource implements ManageableContainer<F
 	public FileResource create(String name, String contentType) throws IOException {
 		File target = new File(getFile(), name);
 		FileResource resource;
-		if (Resource.CONTENT_TYPE_DIRECTORY.equals(contentType)) {
-			if (!target.mkdir() && (!target.exists() || !target.isDirectory())) {
-				throw new IOException("Could not create directory: " + target);
+		try {
+			if (Resource.CONTENT_TYPE_DIRECTORY.equals(contentType)) {
+				if (!target.mkdir() && (!target.exists() || !target.isDirectory())) {
+					throw new IOException("Could not create directory: " + target);
+				}
+				resource = new FileDirectory(this, target, true);
 			}
-			resource = new FileDirectory(this, target, true);
+			else {
+				target.createNewFile();
+				resource = new FileItem(this, target, true);
+			}
 		}
-		else {
-			target.createNewFile();
-			resource = new FileItem(this, target, true);
+		finally {
+			FileRevisions.invalidate(target);
 		}
 		// @2023-09-20: we have the same issue as we did for delete etc: when we create a new file, we accidentally trigger a full listing of the children. for large directories this can incur a large overhead
 		// while it is only really relevant when you actually list the children
@@ -105,14 +110,19 @@ public class FileDirectory extends FileResource implements ManageableContainer<F
 			children.remove(name);
 		}
 		File target = new File(getFile(), name);
-		if (target.isDirectory()) {
-			deleteChildren(target);
+		try {
+			if (target.isDirectory()) {
+				deleteChildren(target);
+			}
+			// boolean is not always accurate
+			target.delete();
+			// perform extra check
+			if (target.exists()) {
+				throw new IOException("Could not delete file: " + target);
+			}
 		}
-		// boolean is not always accurate
-		target.delete();
-		// perform extra check
-		if (target.exists()) {
-			throw new IOException("Could not delete file: " + target);
+		finally {
+			FileRevisions.invalidate(target);
 		}
 	}
 	

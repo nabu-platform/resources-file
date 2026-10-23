@@ -26,6 +26,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URLConnection;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 import java.util.Date;
@@ -37,16 +38,19 @@ import be.nabu.libs.resources.api.FiniteResource;
 import be.nabu.libs.resources.api.ReadableResource;
 import be.nabu.libs.resources.api.Resource;
 import be.nabu.libs.resources.api.ResourceContainer;
+import be.nabu.libs.resources.api.RevisionedResource;
 import be.nabu.libs.resources.api.TimestampedResource;
 import be.nabu.utils.io.IOUtils;
 import be.nabu.utils.io.api.ByteBuffer;
 import be.nabu.utils.io.api.ReadableContainer;
 import be.nabu.utils.io.api.WritableContainer;
 
-public class FileItem extends FileResource implements ReadableResource, AppendableResource, FiniteResource, TimestampedResource, AccessTrackingResource, DetachableResource {
+public class FileItem extends FileResource implements ReadableResource, AppendableResource, FiniteResource, TimestampedResource, AccessTrackingResource, DetachableResource, RevisionedResource {
+	private Path revisionPath;
 
 	public FileItem(ResourceContainer<?> parent, File file, boolean allowUpwardResolving) {
 		super(parent, file, allowUpwardResolving);
+		revisionPath = FileRevisions.observe(file);
 	}
 
 	@Override
@@ -56,9 +60,71 @@ public class FileItem extends FileResource implements ReadableResource, Appendab
 
 	@Override
 	public WritableContainer<ByteBuffer> getWritable() throws FileNotFoundException {
-		if (!getFile().exists() && !getFile().getParentFile().exists())
-			getFile().getParentFile().mkdirs();
-		return IOUtils.wrap(new BufferedOutputStream(new FileOutputStream(getFile())));
+		return openWriter(false);
+	}
+
+	@Override
+	public String getRevision() {
+		return FileRevisions.get(revisionPath);
+	}
+
+	private WritableContainer<ByteBuffer> openWriter(boolean append) throws FileNotFoundException {
+		File file = getFile();
+		if (!file.exists() && !file.getParentFile().exists()) {
+			file.getParentFile().mkdirs();
+		}
+		FileRevisions.begin(file);
+		try {
+			return new RevisionWriter(IOUtils.wrap(new BufferedOutputStream(new FileOutputStream(file, append))), file);
+		}
+		catch (RuntimeException | FileNotFoundException | Error e) {
+			FileRevisions.end(file);
+			throw e;
+		}
+	}
+
+	private static class RevisionWriter implements WritableContainer<ByteBuffer> {
+		private final WritableContainer<ByteBuffer> delegate;
+		private final File file;
+		private boolean closed;
+
+		private RevisionWriter(WritableContainer<ByteBuffer> delegate, File file) {
+			this.delegate = delegate;
+			this.file = file;
+		}
+
+		@Override
+		public long write(ByteBuffer buffer) throws IOException {
+			try {
+				return delegate.write(buffer);
+			}
+			finally {
+				FileRevisions.invalidate(file);
+			}
+		}
+
+		@Override
+		public void flush() throws IOException {
+			try {
+				delegate.flush();
+			}
+			finally {
+				FileRevisions.invalidate(file);
+			}
+		}
+
+		@Override
+		public synchronized void close() throws IOException {
+			if (!closed) {
+				closed = true;
+				try {
+				delegate.close();
+				}
+				finally {
+					FileRevisions.end(file);
+				}
+			}
+		}
 	}
 
 	@Override
@@ -95,10 +161,13 @@ public class FileItem extends FileResource implements ReadableResource, Appendab
 
 	@Override
 	public WritableContainer<ByteBuffer> getAppendable() throws IOException {
-		if (!getFile().exists() && !getFile().getParentFile().exists()) {
-			getFile().getParentFile().mkdirs();
-		}
-		return IOUtils.wrap(new BufferedOutputStream(new FileOutputStream(getFile(), true)));
+		return openWriter(true);
+	}
+
+	@Override
+	public void rename(String name) throws IOException {
+		super.rename(name);
+		revisionPath = FileRevisions.observe(getFile());
 	}
 
 	@Override

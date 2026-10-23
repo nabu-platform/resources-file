@@ -96,8 +96,14 @@ abstract public class FileResource implements Resource, Closeable, LocatableReso
 		}
 		// make sure we have a file directory parent before actually renaming
 		FileDirectory parent = (FileDirectory) getParent();
-		if (!getFile().renameTo(newFile)) {
-			throw new IOException("Could not rename " + getFile() + " to " + newFile);
+		try {
+			if (!getFile().renameTo(newFile)) {
+				throw new IOException("Could not rename " + getFile() + " to " + newFile);
+			}
+		}
+		finally {
+			FileRevisions.invalidate(file);
+			FileRevisions.invalidate(newFile);
 		}
 		if (parent != null) {
 			parent.rename(file.getName(), newFile.getName());
